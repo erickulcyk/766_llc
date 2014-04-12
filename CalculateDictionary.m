@@ -67,10 +67,10 @@ end
 
 outFName = fullfile(dataBaseDir, sprintf('dictionary_%d.mat', params.dictionarySize));
 
-%if(exist(outFName,'file')~=0 && canSkip)
-%    fprintf('Dictionary file %s already exists.\n', outFName);
-%    return;
-%end
+if(exist(outFName,'file')~=0 && canSkip)
+    fprintf('Dictionary file %s already exists.\n', outFName);
+    return;
+end
     
 
 %% load file list and determine indices of training images

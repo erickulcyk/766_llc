@@ -1,5 +1,6 @@
-function [] = GenerateSiftDescriptors( imageFileList, imageBaseDir, dataBaseDir, params, canSkip, pfig )
+function [scalingVector] = GenerateSiftDescriptors( imageFileList, imageBaseDir, dataBaseDir, params, canSkip, pfig, scalingVector, useScalingVector )
 %function [] = GenerateSiftDescriptors( imageFileList, imageBaseDir, dataBaseDir, maxImageSize, gridSpacing, patchSize, canSkip )
+%
 %
 %Generate the dense grid of sift descriptors for each
 % image
@@ -21,6 +22,10 @@ function [] = GenerateSiftDescriptors( imageFileList, imageBaseDir, dataBaseDir,
 fprintf('Building Sift Descriptors\n\n');
 
 %% parameters
+
+if(useScalingVector == 0)
+    scalingVector = zeros(1,128);
+end
 
 if(~exist('params','var'))
     params.maxImageSize = 1000;
@@ -54,7 +59,6 @@ end
 if(exist('pfig','var'))
     tic;
 end
-
 for f = 1:length(imageFileList)
 
     %% load image
@@ -75,10 +79,31 @@ for f = 1:length(imageFileList)
     features = sp_gen_sift(imageFName,params);
     sp_progress_bar(pfig,1,4,f,length(imageFileList),'Generating Sift Descriptors:');
     
+    if(useScalingVector==1)
+        features.data = features.data ./ repmat(scalingVector,size(features.data,1),1,1);
+    else
+        a = max(features.data,[],1);
+        scalingVector = max(a,scalingVector);
+    end
+    
     sp_make_dir(outFName);
     save(outFName, 'features');
-    
 
 end % for
+
+if(useScalingVector==0)
+    for f = 1:length(imageFileList)
+        imageFName = imageFileList{f};
+        [dirN base] = fileparts(imageFName);
+        baseFName = [dirN filesep base];
+        outFName = fullfile(dataBaseDir, sprintf('%s_sift.mat', baseFName));
+
+        load(outFName, 'features');
+        a = repmat(scalingVector,size(features.data,1),1,1);
+        features.data = features.data ./a;
+        sp_make_dir(outFName);
+        save(outFName, 'features');
+    end
+end
 
 end % function

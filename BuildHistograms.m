@@ -1,4 +1,4 @@
-function [ H_all ] = BuildHistograms( imageFileList,imageBaseDir, dataBaseDir, featureSuffix, params, canSkip, pfig )
+function [ H_all ] = BuildHistograms( imageFileList,imageBaseDir, dataBaseDir, dictBaseDir, featureSuffix, params, canSkip, pfig )
 %function [ H_all ] = BuildHistograms( imageFileList, dataBaseDir, featureSuffix, params, canSkip )
 %
 %find texton labels of patches and compute texton histograms of all images
@@ -58,7 +58,7 @@ if(~exist('canSkip','var'))
 end
 %% load texton dictionary (all texton centers)
 
-inFName = fullfile(dataBaseDir, sprintf('dictionary_%d.mat', params.dictionarySize));
+inFName = fullfile(dictBaseDir, sprintf('dictionary_%d.mat', params.dictionarySize));
 load(inFName,'dictionary');
 fprintf('Loaded texton dictionary: %d textons\n', params.dictionarySize);
 
