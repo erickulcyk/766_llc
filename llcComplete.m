@@ -1,5 +1,8 @@
 function llcComplete (image_dir, data_dir)
-
+try
+  parpool(8);
+catch
+end
 K=5;
 
 folderNames = dir(fullfile(image_dir, '*'));
@@ -28,9 +31,41 @@ total_files = total_files-1;
 
 params.gridSpacing = 8;
 params.patchSize = 16;
-params.dictionarySize = 1024;
+params.dictionarySize = 2048;
 params.numTextonImages = total_files;
 params.pyramidLevels = 3;
+if(~exist('params','var'))
+    params.maxImageSize = 1000
+    params.gridSpacing = 8
+    params.patchSize = 16
+    params.dictionarySize = 200
+    params.numTextonImages = 50
+    params.pyramidLevels = 3
+    params.oldSift = false;
+end
+
+
+if(~isfield(params,'maxImageSize'))
+    params.maxImageSize = 1000
+end
+if(~isfield(params,'gridSpacing'))
+    params.gridSpacing = 8
+end
+if(~isfield(params,'patchSize'))
+    params.patchSize = 16
+end
+if(~isfield(params,'dictionarySize'))
+    params.dictionarySize = 200
+end
+if(~isfield(params,'numTextonImages'))
+    params.numTextonImages = 50
+end
+if(~isfield(params,'pyramidLevels'))
+    params.pyramidLevels = 3
+end
+if(~isfield(params,'oldSift'))
+    params.oldSift = false
+end
 
 if(~exist('canSkip','var'))
     canSkip = 1;
@@ -81,23 +116,26 @@ test_c_out = sparse(GetLLCFeatures(K, dictionary, data_dir, filenames, pfig));
 predictedClass = zeros(total_files,1);
 maxEstimate = 10*ones(total_files,1);
 
-for ind = 3:num_folders
-
+parfor ind = 3:num_folders
     label_vector = (double(training_label_vector==ind)).';
-    model = train(label_vector, train_c_out, '-s 0 -e .001');
+    model = train(label_vector, train_c_out, '-c 10 -s 0 -e .001');
     test_label_vector = (double(testing_label_vector==ind)).';
-    [predicted_label, accuracy, prob_estimates] = predict(test_label_vector, test_c_out, model, '-b 1');
-    
-    for i = 1:size(test_label_vector,1)
-      if(abs(prob_estimates(i,2)-prob_estimates(i,1))<=maxEstimate(i))
-          maxEstimate(i) =abs(prob_estimates(i,2)-prob_estimates(i,1));
-          predictedClass(i) = ind;
-      end
-    end
+    [predicted_label, ~, prob_estimates] = predict(test_label_vector, test_c_out, model, '-b 1');
+    probabilities(ind-2,:) = abs(prob_estimates(:,2)-prob_estimates(:,1));
 end
 
+for ind = 3:num_folders
+    parfor i = 1:size(testing_label_vector',1)
+      if(probabilities(ind-2,i)<=maxEstimate(i))
+          maxEstimate(i) = probabilities(ind-2,i);
+          predictedClass(i) = ind;
+      end
+    end    
+end
+
+
 correct = 0;
-for i = 1:size(test_label_vector,1)
+for i = 1:size(testing_label_vector',1)
     if(predictedClass(i)==testing_label_vector(i))
         correct = correct+1;
     end
