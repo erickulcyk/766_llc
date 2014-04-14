@@ -1,5 +1,5 @@
-function [ pyramid_all, scalingVector ] = BuildPyramid( imageFileList, imageBaseDir, dataBaseDir, dictBaseDir, params, canSkip, scalingVector, useScalingVector, saveSift  )
-%function [ pyramid_all ] = BuildPyramid( imageFileList, imageBaseDir, dataBaseDir, params, canSkip )
+function [ pyramid_all ] = BuildPyramid( imageFileList, imageBaseDir, dataBaseDir, dictBaseDir, params, canSkip, canSkipSift, saveSift  )
+%function [ pyramid_all ] = BuildPyramid( imageFileList, imageBaseDir, dataBaseDir, params, canSki )
 %
 %Complete all steps necessary to build a spatial pyramid based
 % on sift features.
@@ -83,10 +83,10 @@ end
 pfig = sp_progress_bar('Building Spatial Pyramid');
 %% build the pyramid
 if(saveSift)
-    scalingVector = GenerateSiftDescriptors( imageFileList,imageBaseDir,dataBaseDir,params,canSkip,pfig, scalingVector, useScalingVector);
+    GenerateSiftDescriptors( imageFileList,imageBaseDir,dataBaseDir,params,canSkipSift,pfig);
 end
 CalculateDictionary(imageFileList,imageBaseDir,dataBaseDir,'_sift.mat',params,canSkip,pfig);
-BuildHistograms(imageFileList,imageBaseDir,dataBaseDir,dictBaseDir, '_sift.mat',params,canSkip,pfig);
-pyramid_all = CompilePyramid(imageFileList,dataBaseDir,sprintf('_texton_ind_%d.mat',params.dictionarySize),params,canSkip,pfig);
+BuildHistograms(imageFileList,imageBaseDir,dataBaseDir,dictBaseDir, '_sift.mat',params,0,pfig);
+pyramid_all = CompilePyramid(imageFileList,dataBaseDir,sprintf('_texton_ind_%d.mat',params.dictionarySize),params,0,pfig);
 close(pfig);
 end

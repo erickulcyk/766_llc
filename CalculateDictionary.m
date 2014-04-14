@@ -139,7 +139,7 @@ options(1) = 1; % display
 options(2) = 1;
 options(3) = 0.1; % precision
 options(5) = 1; % initialization
-options(14) = 100; % maximum iterations
+options(14) = 200; % maximum iterations
 
 centers = zeros(params.dictionarySize, size(sift_all,2));
 

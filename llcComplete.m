@@ -1,7 +1,6 @@
-% Example of how to use the BuildPyramid function
-% set image_dir and data_dir to your actual directories
-image_dir = 'L:\scene_categories\'; 
-train_data_dir = 'L:\scene_data\';
+function llcComplete (image_dir, data_dir)
+
+K=5;
 
 folderNames = dir(fullfile(image_dir, '*'));
 num_folders = size(folderNames,1);
@@ -23,17 +22,40 @@ for ind = 3:num_folders
     total_files= total_files + num_files;
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 total_files = total_files-1;
 
-% return pyramid descriptors for all files in filenames
- params.numTextonImages = total_files;
- params.dictionarySize = 1024;
-[pyramid_all] = BuildPyramid(filenames,image_dir,train_data_dir, train_data_dir,params,0, 1); %n X 21 X 200
+params.gridSpacing = 8;
+params.patchSize = 16;
+params.dictionarySize = 1024;
+params.numTextonImages = total_files;
+params.pyramidLevels = 3;
 
-Training_instance_matrix = sparse(pyramid_all);
+if(~exist('canSkip','var'))
+    canSkip = 1;
+end
+if(~exist('saveSift','var'))
+    saveSift = 1;
+end
+
+pfig = sp_progress_bar('LLC!!!!');
+
+% construct codebook
+if(saveSift)
+    GenerateSiftDescriptors( filenames, image_dir, data_dir, params, canSkip, pfig )
+end
+CalculateDictionary( filenames, image_dir, data_dir, '_sift.mat', params, canSkip, pfig );
+inFName = fullfile(data_dir, sprintf('dictionary_%d.mat', params.dictionarySize));
+load(inFName,'dictionary');
+fprintf('Loaded texton dictionary: %d textons\n', params.dictionarySize);
+
+train_c_out = sparse(GetLLCFeatures(K, dictionary, data_dir, filenames, pfig));
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 total_files = 1;
-test_data_dir = 'L:\scene_data\';
 
 filenames = cell(num_test_files,1);
 testing_label_vector = [];
@@ -49,30 +71,29 @@ end
 
 total_files = total_files-1;
 
-params.numTextonImages = total_files;
-params.dictionarySize = 1024;
+% construct codebook
+if(saveSift)
+    GenerateSiftDescriptors( filenames, image_dir, data_dir, params, canSkip, pfig )
+end
 
-pyramid_all2 = BuildPyramid(filenames,image_dir,test_data_dir, train_data_dir, params, 1, 1); 
-disp('Done with pyramid 2');
-testing_instance_matrix = sparse(pyramid_all2);
-disp('Done with sparse');
+test_c_out = sparse(GetLLCFeatures(K, dictionary, data_dir, filenames, pfig));
 
 predictedClass = zeros(total_files,1);
 maxEstimate = 10*ones(total_files,1);
 
 for ind = 3:num_folders
-    
-  label_vector = (double(training_label_vector==ind)).';
-  label_model = train(label_vector, Training_instance_matrix, '-s 0 -e .001');
-  test_label_vector = (double(testing_label_vector==ind)).';
 
-  [predicted_label, accuracy, prob_estimates] = predict(test_label_vector, testing_instance_matrix, label_model, '-b 1');
-  for i = 1:size(test_label_vector,1)
+    label_vector = (double(training_label_vector==ind)).';
+    model = train(label_vector, train_c_out, '-s 0 -e .001');
+    test_label_vector = (double(testing_label_vector==ind)).';
+    [predicted_label, accuracy, prob_estimates] = predict(test_label_vector, test_c_out, model, '-b 1');
+    
+    for i = 1:size(test_label_vector,1)
       if(abs(prob_estimates(i,2)-prob_estimates(i,1))<=maxEstimate(i))
           maxEstimate(i) =abs(prob_estimates(i,2)-prob_estimates(i,1));
           predictedClass(i) = ind;
       end
-  end
+    end
 end
 
 correct = 0;
@@ -86,3 +107,6 @@ correct/total_files
 
 cm = confusionmat(testing_label_vector.', predictedClass);
 cm
+
+
+
