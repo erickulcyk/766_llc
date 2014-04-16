@@ -8,13 +8,11 @@ x_all_M = cell(size(file_names,1));
 %The number of images to load into ram at once
 %Increasing this reduces the number of times the parfor has to be set up
 SIZE = 480; %Tested with SIZE = 160; consumes approximately 3GB of RAM in addition to matlab overhead
-            %Probably can be increased to 480 without running out of memory, but depends on size of N*M.
+            %Probably can be increased to 480 without running out of memory.
             %size(file_names,1) is way too big
             
-            %for N*M=25*25, codebook 512, this crashes for anything but SIZE = 2
-            
 for u = 1:SIZE:size(file_names,1)
-    for i = u:min(u+SIZE-1,size(file_names,1))
+    for i = u:min(u+SIZE,size(file_names,1))
         sp_progress_bar(pfig,3,4,i,size(file_names,1),'Loading SIFT Feature Data: ');
         [dirN base] = fileparts(file_names{i});
         baseFName = fullfile(dirN, base);
@@ -28,7 +26,7 @@ for u = 1:SIZE:size(file_names,1)
         x_all_M{i} = ceil(M.*double(x_y)./max(x_y));
     end
     
-    parfor i = u:min(u+SIZE-1,size(file_names,1))
+    parfor i = u:min(u+SIZE,size(file_names,1))
         disp(['Computing LLC Weights for ' num2str(i)]);
         x = x_all{i};
         x_n = x_all_N{i};
@@ -67,13 +65,11 @@ for u = 1:SIZE:size(file_names,1)
     
             c_out(ind(j),j,:) = c_in';
         end
-        
         cout(i,:,:) = max(c_out(:,:,:),[],2);
-        cnorm = L2Mean2(squeeze(cout(i,:,:)));
-        cout(i,:,:) = squeeze(cout(i,:,:))./cnorm;
         coutsum(i,:,:) = sum(c_out(:,:,:),2);
-        csumabs = repmat(sum(abs(squeeze(coutsum(i,:,:))),2),[1 size(dictionary,1)]);
-        coutsum(i,:,:) = squeeze(coutsum(i,:,:))./csumabs;
+        cout(i,j,:) = cout(i,j,:)./L2Mean(cout(i,j,:));
+        end
+        coutsum(i,:,:) = coutsum(i,:,:)./sum(abs(coutsum(i,:,:)));
     end
 end
 

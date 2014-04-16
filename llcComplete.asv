@@ -1,9 +1,9 @@
-function llcComplete (image_dir, data_dir, dSize, K, gridN, gridM)
+function llcComplete (image_dir, data_dir)
 try
   parpool(8);
 catch
 end
-%K=5;
+K=5;
 
 folderNames = dir(fullfile(image_dir, '*'));
 num_folders = size(folderNames,1);
@@ -28,15 +28,15 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % size of grid over which to bin histograms
-%gridN = 5;
-%gridM = 5;
+gridN = 1;
+gridM = 1;
 
 
 total_files = total_files-1;
 
 params.gridSpacing = 8;
 params.patchSize = 16;
-params.dictionarySize = dSize;
+params.dictionarySize = 512;
 params.numTextonImages = total_files;
 params.pyramidLevels = 3;
 if(~exist('params','var'))
@@ -90,18 +90,19 @@ inFName = fullfile(data_dir, sprintf('dictionary_%d.mat', params.dictionarySize)
 load(inFName,'dictionary');
 fprintf('Loaded texton dictionary: %d textons\n', params.dictionarySize);
 
-
-if(exist(['train_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'file')~=0 ...
-   && exist(['train_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_sum.mat'],'file')~=0 && canSkip)
+if(exist(['train_c_out_' num2str(params.dictionarySize) '_' K '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'file')~=0 && canSkip)
+    load(['train_c_out_' num2str(params.dictionarySize) '_' K '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'train_c_out');
+    load(['train_c_out_' num2str(params.dictionarySize) '_' K '_' num2str(gridN) '-' num2str(gridM) '_sum.mat'],'train_c_out_sum');
 else
     [train_c_out,train_c_out_sum] = GetLLCFeatures(K, gridN, gridM, dictionary, data_dir, filenames, pfig);
-    train_c_out = sparse(reshape(train_c_out,[size(filenames,1) gridN*gridM*params.dictionarySize]));
-    train_c_out_sum = sparse(reshape(train_c_out_sum,[size(filenames,1) gridN*gridM*params.dictionarySize]));
-    save(['train_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'train_c_out');
-    save(['train_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_sum.mat'],'train_c_out_sum');
+    train_c_out = sparse(reshape(train_c_out,[size(filenames,1)*gridN*gridM params.dictionarySize]));
+    train_c_out_sum = sparse(reshape(train_c_out,[size(filenames,1)*gridN*gridM params.dictionarySize]));
+    save(['train_c_out_' num2str(params.dictionarySize) '_' K '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'train_c_out');
+    save(['train_c_out_' num2str(params.dictionarySize) '_' K '_' num2str(gridN) '-' num2str(gridM) '_sum.mat'],'train_c_out_sum');
+    
 end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 total_files = 1;
 
@@ -124,25 +125,26 @@ if(saveSift)
     GenerateSiftDescriptors( filenames, image_dir, data_dir, params, canSkip, pfig )
 end
 
+[test_c_out,test_c_out_sum] = sparse(GetLLCFeatures(K, gridN, gridM, dictionary, data_dir, filenames, pfig));
+%load(['test_c_out_' num2str(params.dictionarySize) '_' K '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'test_c_out');
+%load(['test_c_out_' num2str(params.dictionarySize) '_' K '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'test_c_out_sum');
+save(['test_c_out_' num2str(params.dictionarySize) '_' K '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'test_c_out');
+save(['test_c_out_' num2str(params.dictionarySize) '_' K '_' num2str(gridN) '-' num2str(gridM) '_sum.mat'],'test_c_out_sum');
 
-if(exist(['test_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'file')~=0 ...
-   && exist(['test_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_sum.mat'],'file')~=0 && canSkip)
+
+if(exist(['train_c_out_' num2str(params.dictionarySize) '_' K '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'file')~=0 && canSkip)
+    load(['train_c_out_' num2str(params.dictionarySize) '_' K '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'train_c_out');
+    load(['train_c_out_' num2str(params.dictionarySize) '_' K '_' num2str(gridN) '-' num2str(gridM) '_sum.mat'],'train_c_out_sum');
 else
-    [test_c_out,test_c_out_sum] = GetLLCFeatures(K, gridN, gridM, dictionary, data_dir, filenames, pfig);
-    test_c_out = sparse(reshape(test_c_out,[size(filenames,1) gridN*gridM*params.dictionarySize]));
-    test_c_out_sum = sparse(reshape(test_c_out_sum,[size(filenames,1) gridN*gridM*params.dictionarySize]));
-    save(['test_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'test_c_out');
-    save(['test_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_sum.mat'],'test_c_out_sum');
+    [train_c_out,train_c_out_sum] = GetLLCFeatures(K, gridN, gridM, dictionary, data_dir, filenames, pfig);
+    train_c_out = sparse(reshape(train_c_out,[size(filenames,1)*gridN*gridM params.dictionarySize]));
+    train_c_out_sum = sparse(reshape(train_c_out,[size(filenames,1)*gridN*gridM params.dictionarySize]));
+    save(['train_c_out_' num2str(params.dictionarySize) '_' K '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'train_c_out');
+    save(['train_c_out_' num2str(params.dictionarySize) '_' K '_' num2str(gridN) '-' num2str(gridM) '_sum.mat'],'train_c_out_sum');
+    
 end
 
-%save memory by loading precomputed arrays later
-load(['train_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'train_c_out');
-load(['train_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_sum.mat'],'train_c_out_sum');
-load(['test_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'test_c_out');
-load(['test_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_sum.mat'],'test_c_out_sum');
 
-train_c_out = train_c_out_sum;
-test_c_out = test_c_out_sum;
 
 predictedClass = zeros(total_files,1);
 maxEstimate = 10*ones(total_files,1);
@@ -154,6 +156,7 @@ for ind = 3:num_folders
     test_label_vector = (double(testing_label_vector==ind)).';
     [predicted_label, ~, prob_estimates] = predict(test_label_vector, test_c_out, model, '-b 1');
     probabilities(ind-2,:) = abs(prob_estimates(:,2)-prob_estimates(:,1));
+    %disp(['Finished with SVN for label ' folderNames{ind}]);
 end
 
 for ind = 3:num_folders
