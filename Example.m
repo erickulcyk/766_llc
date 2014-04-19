@@ -1,7 +1,4 @@
-% Example of how to use the BuildPyramid function
-% set image_dir and data_dir to your actual directories
-image_dir = 'L:\scene_categories\'; 
-train_data_dir = 'L:\scene_data\';
+function Example(image_dir, train_data_dir)
 
 folderNames = dir(fullfile(image_dir, '*'));
 num_folders = size(folderNames,1);
@@ -27,13 +24,12 @@ total_files = total_files-1;
 
 % return pyramid descriptors for all files in filenames
  params.numTextonImages = total_files;
- params.dictionarySize = 1024;
-[pyramid_all] = BuildPyramid(filenames,image_dir,train_data_dir, train_data_dir,params,0, 1); %n X 21 X 200
+ params.dictionarySize = 512;
+[pyramid_all] = BuildPyramid(filenames,image_dir,train_data_dir, train_data_dir,params,1, 1); %n X 21 X 200
 
 Training_instance_matrix = sparse(pyramid_all);
 
 total_files = 1;
-test_data_dir = 'L:\scene_data\';
 
 filenames = cell(num_test_files,1);
 testing_label_vector = [];
@@ -52,7 +48,7 @@ total_files = total_files-1;
 params.numTextonImages = total_files;
 params.dictionarySize = 1024;
 
-pyramid_all2 = BuildPyramid(filenames,image_dir,test_data_dir, train_data_dir, params, 1, 1); 
+pyramid_all2 = BuildPyramid(filenames,image_dir,train_data_dir, train_data_dir, params, 1, 1); 
 disp('Done with pyramid 2');
 testing_instance_matrix = sparse(pyramid_all2);
 disp('Done with sparse');
@@ -63,7 +59,7 @@ maxEstimate = 10*ones(total_files,1);
 for ind = 3:num_folders
     
   label_vector = (double(training_label_vector==ind)).';
-  label_model = train(label_vector, Training_instance_matrix, '-s 0 -e .001');
+  label_model = train(label_vector, Training_instance_matrix, '-c 1000 -s 0 -e .001');
   test_label_vector = (double(testing_label_vector==ind)).';
 
   [predicted_label, accuracy, prob_estimates] = predict(test_label_vector, testing_instance_matrix, label_model, '-b 1');

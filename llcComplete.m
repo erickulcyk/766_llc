@@ -1,9 +1,5 @@
 function llcComplete (image_dir, data_dir, dSize, K, gridN, gridM)
-try
-  parpool(8);
-catch
-end
-%K=5;
+run('vlfeat-0.9.18/toolbox/vl_setup')
 
 folderNames = dir(fullfile(image_dir, '*'));
 num_folders = size(folderNames,1);
@@ -24,13 +20,6 @@ for ind = 3:num_folders
     
     total_files= total_files + num_files;
 end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% size of grid over which to bin histograms
-%gridN = 5;
-%gridM = 5;
-
 
 total_files = total_files-1;
 
@@ -85,7 +74,7 @@ pfig = sp_progress_bar('LLC!!!!');
 if(saveSift)
     GenerateSiftDescriptors( filenames, image_dir, data_dir, params, canSkip, pfig )
 end
-CalculateDictionary( filenames, image_dir, data_dir, '_sift.mat', params, canSkip, pfig );
+CalculateDictionary( filenames, image_dir, data_dir, '_sift.mat', '', params, canSkip, pfig );
 inFName = fullfile(data_dir, sprintf('dictionary_%d.mat', params.dictionarySize));
 load(inFName,'dictionary');
 fprintf('Loaded texton dictionary: %d textons\n', params.dictionarySize);
@@ -126,7 +115,7 @@ end
 
 
 if(exist(['test_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'file')~=0 ...
-   && exist(['test_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_sum.mat'],'file')~=0 && canSkip)
+   && exist(['test_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_sum.mat'],'file')~=0 && 0)
 else
     [test_c_out,test_c_out_sum] = GetLLCFeatures(K, gridN, gridM, dictionary, data_dir, filenames, pfig);
     test_c_out = sparse(reshape(test_c_out,[size(filenames,1) gridN*gridM*params.dictionarySize]));
@@ -141,8 +130,11 @@ load(['train_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(g
 load(['test_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_maxL2.mat'],'test_c_out');
 load(['test_c_out_' num2str(params.dictionarySize) '_' num2str(K) '_' num2str(gridN) '-' num2str(gridM) '_sum.mat'],'test_c_out_sum');
 
-train_c_out = train_c_out_sum;
-test_c_out = test_c_out_sum;
+%train_c_out = train_c_out_sum;
+%test_c_out = test_c_out_sum;
+
+train_c_out(isnan(train_c_out(:))) = 0;
+test_c_out(isnan(test_c_out(:))) = 0;
 
 predictedClass = zeros(total_files,1);
 maxEstimate = 10*ones(total_files,1);

@@ -85,7 +85,7 @@ pfig = sp_progress_bar('Building Spatial Pyramid');
 if(saveSift)
     GenerateSiftDescriptors( imageFileList,imageBaseDir,dataBaseDir,params,canSkipSift,pfig);
 end
-CalculateDictionary(imageFileList,imageBaseDir,dataBaseDir,'_sift.mat',params,canSkip,pfig);
+CalculateDictionary(imageFileList,imageBaseDir,dataBaseDir,'_sift.mat','',params,canSkip,pfig);
 BuildHistograms(imageFileList,imageBaseDir,dataBaseDir,dictBaseDir, '_sift.mat',params,0,pfig);
 pyramid_all = CompilePyramid(imageFileList,dataBaseDir,sprintf('_texton_ind_%d.mat',params.dictionarySize),params,0,pfig);
 close(pfig);
