@@ -1,4 +1,5 @@
 function [ dictionary ] = CalculateDictionary( imageFileList, imageBaseDir, dataBaseDir, featureSuffix, dictionarySuffix, params, canSkip, pfig )
+
 %function [ ] = CalculateDictionary( imageFileList, dataBaseDir, featureSuffix, params, canSkip )
 %
 %Create the texton dictionary
